@@ -1,5 +1,6 @@
 package com.example.springbootpostgrestutorials.controller;
 
+import com.example.springbootpostgrestutorials.exception.ResourceNotFoundException;
 import com.example.springbootpostgrestutorials.model.Tutorial;
 import com.example.springbootpostgrestutorials.model.TutorialDetails;
 import com.example.springbootpostgrestutorials.repository.TutorialDetailsRepository;
@@ -25,66 +26,48 @@ public class TutorialDetailsController {
 
     @GetMapping("/details")
     public ResponseEntity<List<TutorialDetails>> getAllDetails() {
-        try {
-            List<TutorialDetails> details = detailsRepository.findAll();
+        List<TutorialDetails> details = detailsRepository.findAll();
 
-            if (details.isEmpty()) {
-                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-            }
-
+        if (details.isEmpty()) {
+            return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+        } else {
             return new ResponseEntity<>(details, HttpStatus.OK);
-        } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
-    @GetMapping({"/details/{id}", "/tutorials/{id}/details"})
-    public ResponseEntity<TutorialDetails> getDetailsById(@PathVariable(value = "id") Long id) {
-        try {
-            Optional<TutorialDetails> details = detailsRepository.findById(id);
+    @GetMapping({"/details/{tutorialId}", "/tutorials/{tutorialId}/details"})
+    public ResponseEntity<TutorialDetails> getDetailsById(@PathVariable(value = "tutorialId") Long tutorialId) {
+        TutorialDetails details = detailsRepository.findById(tutorialId)
+                .orElseThrow(() -> new ResourceNotFoundException("Not found TutorialDetails for tutorialId = " + tutorialId));
 
-            return details.map(tutorialDetails -> new ResponseEntity<>(tutorialDetails, HttpStatus.OK)).orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
-        } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
+        return new ResponseEntity<>(details, HttpStatus.OK);
     }
 
     @PostMapping("/tutorials/{tutorialId}/details")
     public ResponseEntity<TutorialDetails> createDetails(@PathVariable(value = "tutorialId") Long tutorialId, @RequestBody TutorialDetails detailsRequest) {
-        try {
-            Optional<Tutorial> tutorialData = tutorialRepository.findById(tutorialId);
+        Tutorial tutorial = tutorialRepository.findById(tutorialId)
+                .orElseThrow(() -> new ResourceNotFoundException("Not found Tutorial with id = " + tutorialId));
 
-            if (tutorialData.isEmpty()) {
-                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-            }
+        detailsRequest.setCreatedOn(new java.util.Date());
+        detailsRequest.setTutorial(tutorial);
+        TutorialDetails details = detailsRepository.save(detailsRequest);
 
-            detailsRequest.setCreatedOn(new java.util.Date());
-            detailsRequest.setTutorial(tutorialData.get());
-            TutorialDetails details = detailsRepository.save(detailsRequest);
-
-            return new ResponseEntity<>(details, HttpStatus.CREATED);
-        } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
+        return new ResponseEntity<>(details, HttpStatus.CREATED);
     }
 
-    @PutMapping({"/details/{id}", "/tutorials/{id}/details"})
-    public ResponseEntity<TutorialDetails> updateDetails(@PathVariable(value = "id") Long id, @RequestBody TutorialDetails detailsRequest) {
-        Optional<TutorialDetails> detailsData = detailsRepository.findById(id);
+    @PutMapping({"/details/{tutorialId}", "/tutorials/{tutorialId}/details"})
+    public ResponseEntity<TutorialDetails> updateDetails(@PathVariable(value = "tutorialId") Long tutorialId, @RequestBody TutorialDetails detailsRequest) {
+        TutorialDetails details = detailsRepository.findById(tutorialId)
+                .orElseThrow(() -> new ResourceNotFoundException("Not found TutorialDetails for tutorialId = " + tutorialId));
 
-        if (detailsData.isEmpty()) {
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-        }
+        details.setCreatedBy(detailsRequest.getCreatedBy());
 
-        TutorialDetails _details = detailsData.get();
-        _details.setCreatedBy(detailsRequest.getCreatedBy());
-
-        return new ResponseEntity<>(detailsRepository.save(_details), HttpStatus.OK);
+        return new ResponseEntity<>(detailsRepository.save(details), HttpStatus.OK);
     }
 
-    @DeleteMapping({"/details/{id}", "/tutorials/{id}/details"})
-    public ResponseEntity<HttpStatus> deleteTutorialDetails(@PathVariable(value = "id") Long id) {
-        detailsRepository.deleteById(id);
+    @DeleteMapping({"/details/{tutorialId}", "/tutorials/{tutorialId}/details"})
+    public ResponseEntity<HttpStatus> deleteTutorialDetails(@PathVariable(value = "tutorialId") Long tutorialId) {
+        detailsRepository.deleteById(tutorialId);
 
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
