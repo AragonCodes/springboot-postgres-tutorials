@@ -1,6 +1,7 @@
 package com.example.springbootpostgrestutorials.controller;
 
 import com.example.springbootpostgrestutorials.model.Tutorial;
+import com.example.springbootpostgrestutorials.repository.TutorialDetailsRepository;
 import com.example.springbootpostgrestutorials.repository.TutorialRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -10,13 +11,15 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Optional;
 
-@CrossOrigin(origins = "http://localhost:8081")
 @RestController
 @RequestMapping("/api")
 public class TutorialController {
 
     @Autowired
     TutorialRepository tutorialRepository;
+
+    @Autowired
+    TutorialDetailsRepository detailsRepository;
 
     @GetMapping("/tutorials")
     public ResponseEntity<List<Tutorial>> getAllTutorials(@RequestParam(required = false) String title) {
@@ -86,6 +89,9 @@ public class TutorialController {
     @DeleteMapping("/tutorials/{id}")
     public ResponseEntity<HttpStatus> deleteTutorial(@PathVariable("id") long id) {
         try {
+            if (detailsRepository.existsById(id)) {
+                detailsRepository.deleteById(id);
+            }
             tutorialRepository.deleteById(id);
 
             return new ResponseEntity<>(HttpStatus.NO_CONTENT);
