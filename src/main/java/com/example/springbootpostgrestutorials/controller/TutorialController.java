@@ -4,6 +4,7 @@ import com.example.springbootpostgrestutorials.exception.ResourceNotFoundExcepti
 import com.example.springbootpostgrestutorials.model.Tutorial;
 import com.example.springbootpostgrestutorials.repository.TutorialDetailsRepository;
 import com.example.springbootpostgrestutorials.repository.TutorialRepository;
+import com.example.springbootpostgrestutorials.service.TutorialService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -20,11 +21,14 @@ public class TutorialController {
     TutorialRepository tutorialRepository;
 
     @Autowired
+    TutorialService tutorialService;
+
+    @Autowired
     TutorialDetailsRepository detailsRepository;
 
     @GetMapping("/tutorials")
     public ResponseEntity<List<Tutorial>> getAllTutorials(@RequestParam(required = false) String title) {
-        List<Tutorial> tutorials = title == null ? tutorialRepository.findAll() : tutorialRepository.findByTitleContaining(title);
+        List<Tutorial> tutorials = title == null ? tutorialService.findAll() : tutorialService.findByTitleContaining(title);
 
         if (tutorials.isEmpty()) {
             return new ResponseEntity<>(HttpStatus.NO_CONTENT);
@@ -35,7 +39,7 @@ public class TutorialController {
 
     @GetMapping("/tutorials/{id}")
     public ResponseEntity<Tutorial> getTutorialById(@PathVariable("id") long id) {
-        Tutorial tutorial = tutorialRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Not found Tutorial with id = " + id));
+        Tutorial tutorial = tutorialService.findById(id).orElseThrow(() -> new ResourceNotFoundException("Not found Tutorial with id = " + id));
 
         return new ResponseEntity<>(tutorial, HttpStatus.OK);
     }
@@ -48,7 +52,7 @@ public class TutorialController {
 
     @PutMapping("/tutorials/{id}")
     public ResponseEntity<Tutorial> updateTutorial(@PathVariable("id") long id, @RequestBody Tutorial tutorialRequest) {
-        Tutorial tutorial = tutorialRepository.findById(id)
+        Tutorial tutorial = tutorialService.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Not found Tutorial with id = " + id));
 
         if (tutorialRequest.getTitle() != null) {
@@ -82,7 +86,7 @@ public class TutorialController {
 
     @GetMapping("/tutorials/published")
     public ResponseEntity<List<Tutorial>> findByPublished() {
-        List<Tutorial> tutorials = tutorialRepository.findByPublished(true);
+        List<Tutorial> tutorials = tutorialService.findByPublished(true);
 
         if (tutorials.isEmpty()) {
             return new ResponseEntity<>(HttpStatus.NO_CONTENT);
