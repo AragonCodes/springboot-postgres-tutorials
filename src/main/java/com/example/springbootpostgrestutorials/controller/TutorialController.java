@@ -5,10 +5,14 @@ import com.example.springbootpostgrestutorials.model.Tutorial;
 import com.example.springbootpostgrestutorials.repository.TutorialDetailsRepository;
 import com.example.springbootpostgrestutorials.repository.TutorialRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 
@@ -23,14 +27,23 @@ public class TutorialController {
     TutorialDetailsRepository detailsRepository;
 
     @GetMapping("/tutorials")
-    public ResponseEntity<List<Tutorial>> getAllTutorials(@RequestParam(required = false) String title) {
-        List<Tutorial> tutorials = title == null ? tutorialRepository.findAll() : tutorialRepository.findByTitleContaining(title);
+    public ResponseEntity<HashMap<String, Object>> getAllTutorials(
+            @RequestParam(required = false) String title,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "3") int size
+            ) {
+        Pageable paging = PageRequest.of(page, size);
 
-        if (tutorials.isEmpty()) {
-            return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-        } else {
-            return new ResponseEntity<>(tutorials, HttpStatus.OK);
-        }
+        Page<Tutorial> tutorialsPage = title == null ? tutorialRepository.findAll(paging) : tutorialRepository.findByTitleContaining(title, paging);
+
+
+        HashMap<String, Object> response = new HashMap<>();
+        response.put("tutorials", tutorialsPage.getContent());
+        response.put("currentPage", tutorialsPage.getNumber());
+        response.put("totalItems", tutorialsPage.getTotalElements());
+        response.put("totalPages", tutorialsPage.getTotalPages());
+
+        return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
     @GetMapping("/tutorials/{id}")
@@ -81,13 +94,19 @@ public class TutorialController {
     }
 
     @GetMapping("/tutorials/published")
-    public ResponseEntity<List<Tutorial>> findByPublished() {
-        List<Tutorial> tutorials = tutorialRepository.findByPublished(true);
+    public ResponseEntity<HashMap<String, Object>> findByPublished(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "3") int size
+            ) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<Tutorial> tutorialsPage = tutorialRepository.findByPublished(true, pageable);
 
-        if (tutorials.isEmpty()) {
-            return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-        } else {
-            return new ResponseEntity<>(tutorials, HttpStatus.OK);
-        }
+        HashMap<String, Object> response = new HashMap<>();
+        response.put("tutorials", tutorialsPage.getContent());
+        response.put("currentPage", tutorialsPage.getNumber());
+        response.put("totalItems", tutorialsPage.getTotalElements());
+        response.put("totalPages", tutorialsPage.getTotalPages());
+
+        return new ResponseEntity<>(response, HttpStatus.OK);
     }
 }
